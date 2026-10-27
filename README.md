@@ -9,3 +9,5 @@ A shared bookkeeping app for a small business: daily sales and expenses, profit 
 ## Adding a person
 1. Supabase dashboard → Authentication → Users → Add user → Create new user (tick Auto Confirm).
 2. Add their email to the `ledger_members` table.
+
+Live app: https://mikekelvin18.github.io/Negosyo-app/
