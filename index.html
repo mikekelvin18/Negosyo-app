@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f4e8c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<title>Negosyo Ledger</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column on phones, two columns from 760px. Always light: white cards on a pale grey-blue ground, navy accent, green for profit, red for cost. */
+:root{
+  --bg:#f4f6f9; --surface:#ffffff; --ink:#1a2433; --muted:#5f6b7a; --line:#dfe4ea;
+  --accent:#1f4e8c; --accent-ink:#ffffff; --profit:#1e7b4f; --cost:#c0392b; --soft:#e8edf4;
+  --band:#1f4e8c; --band-ink:#ffffff; --band-muted:#c9d6ea;
+  color-scheme:light;
+}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:14px/1.5 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 48px;
+}
+[hidden]{display:none!important}
+.app{max-width:960px;margin:0 auto;min-width:0}
+header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px))) 16px;padding:20px max(16px,env(safe-area-inset-left,0px)) 18px;background:var(--band);color:var(--band-ink)}
+header.top .sub{color:var(--band-muted)}
+.headwrap{max-width:960px;margin:0 auto;width:100%;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.quick-total{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;margin-top:10px;background:var(--soft);border-radius:8px;font-size:13px}
+.quick-total b{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500}
+h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.01em}
+.sub{margin:2px 0 0;color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:10px;overflow-x:auto;margin-bottom:14px}
+.tabs button{flex:1;min-width:max-content;border:0;background:transparent;color:var(--muted);padding:9px 12px;border-radius:7px;font:inherit;font-weight:500;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.grid{display:grid;gap:12px;grid-template-columns:1fr;min-width:0}
+@media (min-width:760px){.grid{grid-template-columns:1fr 1fr}.span2{grid-column:1/-1}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.card h2{font-size:15px;margin:0 0 10px;font-weight:600}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:10px;min-width:0}
+input,select{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:15px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.seg button{border:0;background:var(--bg);color:var(--muted);padding:8px 14px;font:inherit;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:8px;font:inherit;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;width:100%;padding:12px;font-weight:600;margin-top:4px}
+.btn.danger{color:var(--cost)}
+.btn.small{padding:5px 10px;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+.stat .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:20px;font-weight:500;margin:6px 0 4px;font-variant-numeric:tabular-nums}
+.stat small{color:var(--muted);font-size:12px}
+.pos{color:var(--profit)} .neg{color:var(--cost)}
+.mono,.num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.num{text-align:right}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--muted);font-weight:500;font-size:12px}
+td.sub-row,tr.sub td:first-child{padding-left:22px;color:var(--muted)}
+tr.total td{font-weight:600}
+tr.hd td{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding-top:14px;border-bottom:0}
+.entry{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+.entry .meta{color:var(--muted);font-size:12px}
+.entry .amt{font-family:"IBM Plex Mono",ui-monospace,monospace;text-align:right;font-variant-numeric:tabular-nums}
+.entry .acts{grid-column:1/-1;display:flex;justify-content:flex-end}
+.empty{color:var(--muted);text-align:center;padding:24px 8px}
+.hint{color:var(--muted);font-size:12px;margin:8px 0 0}
+.warn{color:var(--cost);font-size:13px;margin:0 0 10px}
+.big-price{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:30px;font-weight:600;font-variant-numeric:tabular-nums}
+.pie-wrap{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.pie-wrap svg{width:180px;height:180px;flex:0 0 auto}
+.legend{list-style:none;padding:0;margin:0;flex:1;min-width:180px;font-size:13px}
+.legend li{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+/* Shared-app additions: sign-in, sync status, import box. */
+.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--band-muted)}
+.status .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7fd1a5;margin-right:5px;vertical-align:middle}
+.status .dot.off{background:#f0b35e}
+.linkbtn{background:none;border:0;padding:0;color:var(--band-ink);font:inherit;text-decoration:underline;cursor:pointer}
+.login{max-width:420px;margin:32px auto 0}
+.login .err{color:var(--cost);font-size:13px;margin:8px 0 0;min-height:1em}
+details.more{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+details.more summary{cursor:pointer;color:var(--muted);font-size:13px}
+textarea.imp{display:block;width:100%;box-sizing:border-box;min-height:110px;margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:8px;font:12px/1.4 "IBM Plex Mono",ui-monospace,monospace;color:var(--ink);background:var(--surface)}
+.who{color:var(--muted)}
+button[disabled]{opacity:.6;cursor:default}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.chips button{border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:5px 10px;border-radius:999px;font:inherit;font-size:12px;cursor:pointer}
+.boxes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.pbox{position:relative;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface);min-width:0}
+.pbox input{margin:0;padding:6px 8px;font-size:14px}
+.pbox .pb-label{border-color:transparent;padding-right:28px;font-weight:600;background:transparent}
+.pbox .pb-label:focus{border-color:var(--line)}
+.pbox .pb-amt{margin-top:6px;font-family:"IBM Plex Mono",ui-monospace,monospace}
+.pbox .pb-x{position:absolute;top:6px;right:6px;border:0;background:none;color:var(--muted);font-size:18px;line-height:1;padding:4px 6px;cursor:pointer;border-radius:6px}
+.pbox .pb-x.armed{color:var(--cost);font-size:12px;background:var(--soft)}
+.pbox.draft{border-style:dashed}
+.pbox.add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:92px;border:1.5px dashed var(--accent);color:var(--accent);background:var(--soft);font:inherit;cursor:pointer}
+.pbox.add b{font-size:28px;line-height:1;font-weight:500}
+.pbox.add span{font-size:12px}
+.bizedit{background:none;border:0;color:var(--band-muted);font:inherit;font-size:13px;cursor:pointer;padding:2px 6px;margin-left:4px;text-decoration:underline}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="headwrap">
+    <div>
+      <h1><span id="bizName">Negosyo Ledger</span><button class="bizedit" id="bizEdit" type="button" hidden aria-label="Change business name">Edit</button></h1>
+      <p class="sub">Daily sales, costs, profit, pricing and tax figures for a small business</p>
+    </div>
+    <div>
+      <span class="sub" id="todayLabel"></span>
+      <div class="status" id="statusBar" hidden><span><span class="dot" id="syncDot"></span><span id="syncText">Synced</span></span><span id="whoText"></span><button class="linkbtn" id="signOutBtn" type="button">Sign out</button></div>
+    </div>
+  </div></header>
+<div class="app" id="authView" hidden>
+  <form class="card login" id="loginForm" autocomplete="on">
+    <h2>Sign in</h2>
+    <p class="hint" style="margin:0 0 12px">Use the email and password you were given. Your phone will remember you after this.</p>
+    <label>Email<input type="email" id="lEmail" autocomplete="username" required></label>
+    <label>Password<input type="password" id="lPass" autocomplete="current-password" required></label>
+    <button class="btn primary" type="submit" id="lBtn">Sign in</button>
+    <p class="err" id="lErr" role="alert"></p>
+  </form>
+</div>
+<div class="app" id="loadingView"><p class="empty">Loading…</p></div>
+<div class="app" id="appView" hidden>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="log" aria-selected="true">Log</button>
+    <button role="tab" data-tab="price" aria-selected="false">Price check</button>
+    <button role="tab" data-tab="charts" aria-selected="false">Charts</button>
+    <button role="tab" data-tab="forms" aria-selected="false">Tax figures</button>
+  </nav>
+
+  <!-- LOG -->
+  <section id="tab-log" class="grid">
+    <form id="entryForm" class="card" autocomplete="off">
+      <h2>Add entry</h2>
+      <div class="seg" role="group" aria-label="Entry type">
+        <button type="button" data-kind="sale" aria-pressed="true">Sale</button>
+        <button type="button" data-kind="expense" aria-pressed="false">Expense</button>
+      </div>
+      <div class="pair">
+        <label>Date<input type="date" id="fDate"></label>
+        <label>Amount (₱)<input type="number" id="fAmount" min="0" step="0.01" inputmode="decimal" required></label>
+      </div>
+      <label>Category<select id="fCat"></select></label>
+      <label>Note (optional)<input id="fNote" maxlength="80" placeholder="e.g. 2 boxes of supplies"></label>
+      <button class="btn primary" type="submit">Save entry</button>
+    </form>
+
+    <form id="quickForm" class="card" autocomplete="off">
+      <h2>Today's expenses</h2>
+      <label>What did you buy?<input id="qNote" maxlength="80" placeholder="e.g. Supplies, 2 packs"></label>
+      <div class="pair">
+        <label>Amount (₱)<input type="number" id="qAmount" min="0" step="0.01" inputmode="decimal" required></label>
+        <label>Category<select id="qCat"></select></label>
+      </div>
+      <button class="btn primary" type="submit">Add expense for today</button>
+      <div id="quickList"></div>
+      <div class="quick-total"><span>Today's expenses</span><b id="qToday">₱0.00</b></div>
+      <div class="quick-total"><span id="qMonthLbl">This month's expenses</span><b id="qMonth">₱0.00</b></div>
+    </form>
+
+    <div class="stats span2" id="periodCards"></div>
+
+    <div class="card span2">
+      <div class="row">
+        <h2>Profit by period</h2>
+        <div class="seg" role="group" aria-label="Period view">
+          <button type="button" data-view="week" aria-pressed="true">Weekly</button>
+          <button type="button" data-view="month" aria-pressed="false">Monthly</button>
+        </div>
+      </div>
+      <div id="periodTable"></div>
+      <p class="hint" id="avgLine"></p>
+    </div>
+
+    <div class="card span2">
+      <div class="row">
+        <h2>Entries</h2>
+        <div class="row">
+          <select id="fFilter" aria-label="Filter entries" style="width:auto;margin:0">
+            <option value="all">All</option>
+            <option value="sale">Sales</option>
+            <option value="expense">Expenses</option>
+          </select>
+          <button class="btn small" id="csvBtn" type="button">Copy as CSV</button>
+        </div>
+      </div>
+      <div id="entryList"></div>
+      <p class="hint">Saved online. Everyone signed in sees the same entries. Copy the CSV now and then as a backup.</p>
+      <details class="more">
+        <summary>Bring in entries from the old ledger</summary>
+        <p class="hint">In the old ledger, tap Copy as CSV, then paste it here.</p>
+        <textarea class="imp" id="importText" placeholder="date,type,category,note,amount"></textarea>
+        <button class="btn small" id="importBtn" type="button">Import entries</button>
+      </details>
+    </div>
+  </section>
+
+  <!-- PRICE CHECK -->
+  <section id="tab-price" class="grid" hidden>
+    <div class="card span2" id="planner">
+      <h2>Monthly cost planner</h2>
+      <p class="hint" style="margin:0 0 12px">Put each expense you expect this month in its own box. Tap + to add another. The app works out your cost per day and per unit, so you know what to charge.</p>
+      <div class="boxes" id="planBoxes"></div>
+      <div class="chips" id="plChips"></div>
+      <div class="grid" style="margin-top:6px">
+        <div>
+          <div class="quick-total" style="margin-top:0"><span>Total per month</span><b id="plMonth">₱0.00</b></div>
+          <div class="pair" style="margin-top:12px">
+            <label>Days open per month<input type="number" id="plDays" min="1" max="31" step="1" inputmode="numeric" value="26"></label>
+            <label>Units sold per day<input type="number" id="plUnits" min="0" step="0.5" inputmode="decimal" placeholder="e.g. 15"></label>
+          </div>
+          <p class="hint" style="margin-top:-4px">A unit is one product or one service you sell, like one meal, one haircut or one load.</p>
+        </div>
+        <div>
+          <table>
+            <tr><td>Cost per day</td><td class="num" id="plPerDay">—</td></tr>
+            <tr class="total"><td>Cost per unit</td><td class="num" id="plPerUnit">—</td></tr>
+          </table>
+          <p class="hint" id="plActual"></p>
+          <button class="btn primary" type="button" id="plUse">Use cost per unit in the price check</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Pricing</h2>
+      <label>Cost per unit (₱)<input type="number" id="pCost" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 45"></label>
+      <label>I want to
+        <select id="pMode">
+          <option value="margin">Earn a margin on the selling price</option>
+          <option value="markup">Mark up my cost</option>
+          <option value="peso">Earn a fixed peso profit</option>
+          <option value="price">Check the price I charge</option>
+        </select>
+      </label>
+      <label><span id="pValText">Target margin (% of selling price)</span>
+        <input type="number" id="pVal" step="0.01" inputmode="decimal" placeholder="e.g. 30">
+      </label>
+    </div>
+    <div class="card">
+      <h2>Result</h2>
+      <div class="big-price" id="pPrice">—</div>
+      <p class="hint" id="pRound"></p>
+      <table id="pTable" style="margin-top:10px"></table>
+    </div>
+    <div class="card span2">
+      <h2>Price ladder for this cost</h2>
+      <div id="pLadder"></div>
+    </div>
+  </section>
+
+  <!-- CHARTS -->
+  <section id="tab-charts" class="grid" hidden>
+    <div class="card span2">
+      <label style="margin:0">Period
+        <select id="cPeriod">
+          <option value="m">This month</option>
+          <option value="3">Last 3 months</option>
+          <option value="6">Last 6 months</option>
+          <option value="all" selected>All time</option>
+        </select>
+      </label>
+    </div>
+    <div class="card">
+      <h2>Costs by category</h2>
+      <div class="pie-wrap">
+        <svg id="costPie" viewBox="0 0 180 180" role="img" aria-label="Pie chart of costs by category"></svg>
+        <ul class="legend" id="costLegend"></ul>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Sales by type</h2>
+      <div class="pie-wrap">
+        <svg id="salesPie" viewBox="0 0 180 180" role="img" aria-label="Pie chart of sales by type"></svg>
+        <ul class="legend" id="salesLegend"></ul>
+      </div>
+    </div>
+    <div class="card span2">
+      <h2>Profit by month, last 6 months</h2>
+      <svg id="profitBars" viewBox="0 0 320 200" style="width:100%;height:auto" role="img" aria-label="Bar chart of monthly profit"></svg>
+      <p class="hint">Green is profit, rust is loss. Labels are in pesos, with k for thousands.</p>
+    </div>
+  </section>
+
+  <!-- TAX FIGURES -->
+  <section id="tab-forms" class="grid" hidden>
+    <div class="card span2">
+      <div class="pair">
+        <label>Year<select id="fYear"></select></label>
+        <label>Period<select id="fQ">
+          <option value="fy" selected>Full year</option>
+          <option value="q1">Q1 (Jan to Mar)</option>
+          <option value="q2">Q2 (Apr to Jun)</option>
+          <option value="q3">Q3 (Jul to Sep)</option>
+          <option value="q4">Q4 (Oct to Dec)</option>
+        </select></label>
+      </div>
+      <div class="pair">
+        <label>Tax regime<select id="fRegime">
+          <option value="grad">Graduated rates + 3% percentage tax (non-VAT)</option>
+          <option value="eight">8% flat rate option (non-VAT, gross up to ₱3M)</option>
+          <option value="vat">VAT-registered (12%)</option>
+        </select></label>
+        <label>Deductions<select id="fDed">
+          <option value="itemized" selected>Itemized (actual expenses)</option>
+          <option value="osd">40% optional standard deduction</option>
+        </select></label>
+      </div>
+      <label>Sales returns and discounts (₱)<input type="number" id="fReturns" min="0" step="0.01" value="0" inputmode="decimal"></label>
+      <p class="hint">Figures come from the entries in the Log. Copy each number into the matching BIR form line.</p>
+    </div>
+    <div class="card span2">
+      <div id="formWarn"></div>
+      <table id="formLines"></table>
+    </div>
+    <p class="hint span2">These are estimates from what you logged, not tax advice. Check the current rates and forms on bir.gov.ph, and confirm with an accountant before you file.</p>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/supabase.js"></script>
+<script>
+(function(){
+  const db = window.supabase.createClient('https://xzxhsujwcpjbbtekypcl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6eGhzdWp3Y3BqYmJ0ZWt5cGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMDE2NjEsImV4cCI6MjEwODY3NzY2MX0.z8dZXC3Vo8BVU30i1kDnqtgEArNy88rL_boQupkguzo');
+  const SALE_CATS = ['Product sales','Services','Delivery fees','Other income'];
+  const COGS = ['Stock / materials','Supplies','Packaging','Shipping in'];
+  const OPEX = ['Rent','Electricity','Water','Internet & phone','Wages / salaries','Transportation / delivery','Repairs & maintenance','Permits & licenses','Government taxes & fees','Marketing','Other expenses'];
+  const PALETTE = ['#1f7a4d','#b5462e','#2f6fa3','#c8962e','#7a4fa3','#2a9d9d','#c2578a','#6b7d2a','#8a6d4b','#4a5a66'];
+
+  let state = { entries: [], plan: [], days: 26, units: null, bizName: 'My Business' };
+  const ui = { kind: 'sale', view: 'week', armed: null, started: false };
+
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, '0');
+  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const startOfWeek = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+  const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
+  const endOfMonth = d => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money = n => {
+    const v = Math.round((+n || 0) * 100) / 100;
+    const s = '₱' + Math.abs(v).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return v < 0 ? '−' + s : s;
+  };
+  const pct = x => isFinite(x) ? (x * 100).toFixed(1) + '%' : '—';
+  const compact = n => {
+    const a = Math.abs(n);
+    const s = a >= 1000 ? (a / 1000).toFixed(a >= 10000 ? 0 : 1) + 'k' : String(Math.round(a));
+    return (n < 0 ? '−' : '') + '₱' + s;
+  };
+  const isCogs = c => COGS.includes(c);
+
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const toEntry = r => ({ id: r.id, date: r.date, kind: r.kind, category: r.category, note: r.note || '', amount: +r.amount });
+
+  function setSync(ok, text){
+    $('syncDot').classList.toggle('off', !ok);
+    $('syncText').textContent = text;
+  }
+
+  // Fetch every entry, a page at a time (the server returns at most 1000 rows per request).
+  async function load(){
+    const all = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await db.from('entries')
+        .select('id,date,kind,category,note,amount')
+        .order('date').order('id')
+        .range(from, from + 999);
+      if (error) throw error;
+      all.push(...data.map(toEntry));
+      if (data.length < 1000) break;
+    }
+    state.entries = all;
+    const [items, settings, biz] = await Promise.all([
+      db.from('plan_items').select('id,label,amount').order('created_at'),
+      db.from('plan_settings').select('days_open,units_per_day').eq('id', 1).maybeSingle(),
+      db.from('business_settings').select('name').eq('id', 1).maybeSingle()
+    ]);
+    for (const r of [items, settings, biz]) if (r.error) throw r.error;
+    if (biz.data) state.bizName = biz.data.name;
+    state.plan = items.data.map(r => ({ id: r.id, label: r.label, amount: +r.amount }));
+    if (settings.data) {
+      state.days = settings.data.days_open;
+      state.units = settings.data.units_per_day == null ? null : +settings.data.units_per_day;
+    }
+    setSync(true, 'Synced');
+  }
+  async function refresh(){
+    try { await load(); renderAll(); }
+    catch (e) { setSync(false, 'Offline, showing last loaded'); }
+  }
+  let refreshTimer = null;
+  const refreshSoon = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 400); };
+
+  async function addEntries(rows){
+    const { error } = await db.from('entries').insert(rows);
+    if (error) throw error;
+    state.entries.push(...rows);
+  }
+  async function deleteEntry(id){
+    const { error } = await db.from('entries').delete().eq('id', id);
+    if (error) throw error;
+    state.entries = state.entries.filter(x => String(x.id) !== id);
+  }
+  function saveFailed(e){
+    setSync(false, 'Not saved');
+    toast(/fetch|network/i.test(String(e && e.message)) ? 'No internet. Not saved, try again.' : 'Could not save. Try again.');
+  }
+
+  function toast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+  function copyText(t){
+    try {
+      navigator.clipboard.writeText(t).then(
+        () => toast('Copied ' + t),
+        () => toast('Could not copy. Select the text instead.')
+      );
+    } catch (e) { toast('Could not copy. Select the text instead.'); }
+  }
+
+  function totals(list){
+    let sales = 0, cogs = 0, opex = 0;
+    for (const e of list) {
+      if (e.kind === 'sale') sales += e.amount;
+      else if (isCogs(e.category)) cogs += e.amount;
+      else opex += e.amount;
+    }
+    const costs = cogs + opex;
+    const profit = sales - costs;
+    return { sales, cogs, opex, costs, profit, margin: sales ? profit / sales : NaN };
+  }
+  const inRange = (list, from, to) => list.filter(e => e.date >= from && e.date <= to);
+
+  function graduated(t){
+    if (t <= 250000) return 0;
+    if (t <= 400000) return (t - 250000) * 0.15;
+    if (t <= 800000) return 22500 + (t - 400000) * 0.20;
+    if (t <= 2000000) return 102500 + (t - 800000) * 0.25;
+    if (t <= 8000000) return 402500 + (t - 2000000) * 0.30;
+    return 2202500 + (t - 8000000) * 0.35;
+  }
+
+  /* ---------- LOG ---------- */
+  function renderCards(){
+    const now = new Date();
+    const ws = startOfWeek(now);
+    const periods = [
+      ['Today', ymd(now), ymd(now)],
+      ['This week', ymd(ws), ymd(addDays(ws, 6))],
+      ['This month', ymd(startOfMonth(now)), ymd(endOfMonth(now))]
+    ];
+    $('periodCards').innerHTML = periods.map(([label, f, t]) => {
+      const T = totals(inRange(state.entries, f, t));
+      return `<div class="stat">
+        <div class="lbl">${label}</div>
+        <div class="big ${T.profit >= 0 ? 'pos' : 'neg'}">${money(T.profit)}</div>
+        <small>Sales ${money(T.sales)} · Costs ${money(T.costs)} · Margin ${pct(T.margin)}</small>
+      </div>`;
+    }).join('');
+  }
+
+  function fmtRange(s, e){
+    const o = { month: 'short', day: 'numeric' };
+    return `${s.toLocaleString('en-PH', o)} – ${e.toLocaleString('en-PH', o)}`;
+  }
+
+  function periodRows(){
+    const now = new Date();
+    const rows = [];
+    if (ui.view === 'week') {
+      const ws = startOfWeek(now);
+      for (let i = 0; i < 8; i++) {
+        const s = addDays(ws, -7 * i), e = addDays(s, 6);
+        rows.push({ label: fmtRange(s, e), from: ymd(s), to: ymd(e) });
+      }
+    } else {
+      for (let i = 0; i < 6; i++) {
+        const s = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        rows.push({ label: s.toLocaleString('en-PH', { month: 'long', year: 'numeric' }), from: ymd(s), to: ymd(endOfMonth(s)) });
+      }
+    }
+    return rows.map(r => ({ ...r, ...totals(inRange(state.entries, r.from, r.to)) }));
+  }
+
+  function renderPeriod(){
+    const rows = periodRows();
+    $('periodTable').innerHTML = `<table>
+      <thead><tr><th>${ui.view === 'week' ? 'Week' : 'Month'}</th><th class="num">Sales</th><th class="num">Costs</th><th class="num">Profit</th><th class="num">Margin</th></tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td>${esc(r.label)}</td>
+        <td class="num">${money(r.sales)}</td>
+        <td class="num">${money(r.costs)}</td>
+        <td class="num ${r.profit >= 0 ? 'pos' : 'neg'}">${money(r.profit)}</td>
+        <td class="num">${pct(r.margin)}</td>
+      </tr>`).join('')}</tbody></table>`;
+    const active = rows.filter(r => r.sales || r.costs);
+    const unit = ui.view === 'week' ? 'week' : 'month';
+    const avg = active.length ? active.reduce((s, r) => s + r.profit, 0) / active.length : 0;
+    $('avgLine').textContent = active.length
+      ? `Average profit per ${unit}: ${money(avg)}, over ${active.length} ${unit}${active.length > 1 ? 's' : ''} with entries.`
+      : 'Add entries to see your weekly and monthly profit.';
+  }
+
+  function renderList(){
+    const filter = $('fFilter').value;
+    let list = [...state.entries].sort((a, b) => b.date.localeCompare(a.date));
+    if (filter !== 'all') list = list.filter(e => e.kind === filter);
+    const shown = list.slice(0, 60);
+    $('entryList').innerHTML = shown.length
+      ? shown.map(e => `<div class="entry">
+          <div>
+            <div>${esc(e.note || e.category)}</div>
+            <div class="meta">${e.date} · ${esc(e.category)}</div>
+          </div>
+          <div class="amt ${e.kind === 'sale' ? 'pos' : 'neg'}">${e.kind === 'sale' ? '+' : '−'}${money(e.amount).replace('−', '')}</div>
+          <div class="acts"><button class="btn small danger" type="button" data-del="${esc(e.id)}">${ui.armed === e.id ? 'Tap again to delete' : 'Delete'}</button></div>
+        </div>`).join('') + (list.length > 60 ? `<p class="hint">Showing the latest 60 of ${list.length} entries.</p>` : '')
+      : '<div class="empty">No entries yet. Add a sale or an expense above.</div>';
+  }
+
+  function buildCats(){
+    const sel = $('fCat');
+    if (ui.kind === 'sale') {
+      sel.innerHTML = SALE_CATS.map(c => `<option>${esc(c)}</option>`).join('');
+    } else {
+      sel.innerHTML = `<optgroup label="Cost of sales">${COGS.map(c => `<option>${esc(c)}</option>`).join('')}</optgroup>
+        <optgroup label="Operating expenses">${OPEX.map(c => `<option>${esc(c)}</option>`).join('')}</optgroup>`;
+    }
+  }
+  function syncKind(){
+    document.querySelectorAll('[data-kind]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.kind === ui.kind)));
+  }
+  function syncView(){
+    document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === ui.view)));
+  }
+
+  function renderQuick(){
+    const now = new Date(), today = ymd(now);
+    const todays = state.entries.filter(e => e.kind === 'expense' && e.date === today);
+    const month = totals(inRange(state.entries, ymd(startOfMonth(now)), ymd(endOfMonth(now))));
+    $('quickList').innerHTML = todays.length
+      ? todays.map(e => `<div class="entry"><div><div>${esc(e.note || e.category)}</div><div class="meta">${esc(e.category)}</div></div><div class="amt neg">−${money(e.amount)}</div></div>`).join('')
+      : '<p class="hint">Nothing bought yet today.</p>';
+    $('qToday').textContent = money(todays.reduce((s, e) => s + e.amount, 0));
+    $('qMonthLbl').textContent = `Expenses for ${now.toLocaleString('en-PH', { month: 'long' })}`;
+    $('qMonth').textContent = money(month.costs);
+  }
+
+  /* ---------- PRICE CHECK ---------- */
+  function renderPricing(){
+    const mode = $('pMode').value;
+    const labels = {
+      margin: 'Target margin (% of selling price)',
+      markup: 'Markup on cost (%)',
+      peso: 'Profit I want per unit (₱)',
+      price: 'Selling price I charge (₱)'
+    };
+    $('pValText').textContent = labels[mode];
+    const c = parseFloat($('pCost').value) || 0;
+    const v = parseFloat($('pVal').value);
+    let price = NaN;
+    if (mode === 'margin' && isFinite(v) && v >= 0 && v < 100) price = c / (1 - v / 100);
+    else if (mode === 'markup' && isFinite(v)) price = c * (1 + v / 100);
+    else if (mode === 'peso' && isFinite(v)) price = c + v;
+    else if (mode === 'price' && isFinite(v)) price = v;
+    const ok = isFinite(price) && price > 0;
+    const profit = ok ? price - c : NaN;
+    $('pPrice').textContent = ok ? money(price) : '—';
+    $('pRound').textContent = ok
+      ? `Round up to ${money(Math.ceil(price))} to keep the change simple.`
+      : 'Enter your cost and a target to see the price.';
+    $('pTable').innerHTML = ok ? `
+      <tr><td>Profit per unit</td><td class="num ${profit >= 0 ? 'pos' : 'neg'}">${money(profit)}</td></tr>
+      <tr><td>Margin on selling price</td><td class="num">${pct(profit / price)}</td></tr>
+      <tr><td>Markup on cost</td><td class="num">${c ? pct(profit / c) : '—'}</td></tr>` : '';
+    if (c > 0) {
+      const lad = [20, 30, 40, 50, 60].map(m => {
+        const p = c / (1 - m / 100);
+        return `<tr><td>${m}%</td><td class="num">${money(p)}</td><td class="num">${money(p - c)}</td><td class="num">${pct((p - c) / c)}</td></tr>`;
+      }).join('');
+      $('pLadder').innerHTML = `<table><thead><tr><th>Margin</th><th class="num">Price</th><th class="num">Profit</th><th class="num">Markup</th></tr></thead><tbody>${lad}</tbody></table>`;
+    } else {
+      $('pLadder').innerHTML = '<div class="empty">Enter a cost to see the ladder.</div>';
+    }
+  }
+
+  function renderBiz(){
+    $('bizName').textContent = state.bizName;
+    document.title = state.bizName + ' · Ledger';
+  }
+
+  /* ---------- COST PLANNER ---------- */
+  const PLAN_CHIPS = ['Rent', 'Electricity', 'Water', 'Wages / salaries', 'Supplies', 'Stock / materials', 'Internet & phone', 'Transportation', 'Repairs & maintenance', 'Permits & licenses'];
+  // Boxes not yet saved (no name or amount yet) live only on this phone.
+  const drafts = [];
+  const planAll = () => [...state.plan, ...drafts];
+  function planFigures(){
+    const month = planAll().reduce((s, x) => s + (+x.amount || 0), 0);
+    const perDay = month / state.days;
+    const perUnit = state.units > 0 ? perDay / state.units : NaN;
+    return { month, perDay, perUnit };
+  }
+  function renderPlanSums(){
+    const P = planFigures();
+    $('plMonth').textContent = money(P.month);
+    if (document.activeElement !== $('plDays')) $('plDays').value = state.days;
+    if (document.activeElement !== $('plUnits')) $('plUnits').value = state.units == null ? '' : state.units;
+    $('plPerDay').textContent = P.month ? money(P.perDay) : '—';
+    $('plPerUnit').textContent = P.month && isFinite(P.perUnit) ? money(P.perUnit) : '—';
+    $('plUse').disabled = !(P.month && isFinite(P.perUnit));
+    const now = new Date();
+    const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const T = totals(inRange(state.entries, ymd(lm), ymd(endOfMonth(lm))));
+    $('plActual').textContent = T.costs
+      ? `For comparison, your log shows ${money(T.costs)} in costs for ${lm.toLocaleString('en-PH', { month: 'long' })}, about ${money(T.costs / state.days)} per day open.`
+      : (P.month && !(state.units > 0) ? 'Enter how many units you sell per day to see the cost per unit.' : '');
+  }
+  function renderPlanner(){
+    // Don't rebuild the boxes while someone is typing in one.
+    if (!$('planBoxes').contains(document.activeElement)) {
+      const box = (x, draft) => `<div class="pbox${draft ? ' draft' : ''}" data-id="${esc(x.id)}">
+          <input class="pb-label" maxlength="60" value="${esc(x.label)}" placeholder="Expense name" aria-label="Expense name">
+          <input class="pb-amt" type="number" min="0" step="0.01" inputmode="decimal" value="${x.amount === '' ? '' : esc(x.amount)}" placeholder="₱ per month" aria-label="Amount per month">
+          <button class="pb-x${ui.armed === x.id ? ' armed' : ''}" type="button" data-pdel="${esc(x.id)}" aria-label="Remove">${ui.armed === x.id ? 'Remove?' : '×'}</button>
+        </div>`;
+      $('planBoxes').innerHTML = state.plan.map(x => box(x, false)).join('') + drafts.map(x => box(x, true)).join('')
+        + '<button class="pbox add" type="button" id="plAdd"><b>+</b><span>Add expense</span></button>';
+    }
+    renderPlanSums();
+  }
+
+  /* ---------- CHARTS ---------- */
+  function pie(svgId, legendId, map){
+    const items = Object.entries(map).sort((a, b) => b[1] - a[1]);
+    const total = items.reduce((s, [, v]) => s + v, 0);
+    const svg = $(svgId), leg = $(legendId);
+    if (!total) {
+      svg.innerHTML = '<circle cx="90" cy="90" r="80" style="fill:var(--soft)"/><text x="90" y="95" text-anchor="middle" style="fill:var(--muted);font-size:12px">No data</text>';
+      leg.innerHTML = '<li><span>Nothing logged for this period</span></li>';
+      return;
+    }
+    let a0 = -Math.PI / 2, paths = '';
+    items.forEach(([k, v], i) => {
+      const frac = v / total, color = PALETTE[i % PALETTE.length];
+      if (items.length === 1) {
+        paths += `<circle cx="90" cy="90" r="80" style="fill:${color}"><title>${esc(k)}</title></circle>`;
+      } else {
+        const a1 = a0 + frac * 2 * Math.PI;
+        const x0 = 90 + 80 * Math.cos(a0), y0 = 90 + 80 * Math.sin(a0);
+        const x1 = 90 + 80 * Math.cos(a1), y1 = 90 + 80 * Math.sin(a1);
+        const large = frac > 0.5 ? 1 : 0;
+        paths += `<path d="M90 90 L${x0.toFixed(2)} ${y0.toFixed(2)} A80 80 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z" style="fill:${color}"><title>${esc(k)}</title></path>`;
+        a0 = a1;
+      }
+    });
+    svg.innerHTML = paths;
+    leg.innerHTML = items.map(([k, v], i) => `<li>
+      <span><span class="sw" style="background:${PALETTE[i % PALETTE.length]}"></span>${esc(k)}</span>
+      <span class="mono">${money(v)} · ${(v / total * 100).toFixed(0)}%</span>
+    </li>`).join('');
+  }
+
+  function renderCharts(){
+    const per = $('cPeriod').value;
+    const now = new Date();
+    let from = '0000-01-01', to = '9999-12-31';
+    if (per === 'm') { from = ymd(startOfMonth(now)); to = ymd(endOfMonth(now)); }
+    else if (per === '3') { from = ymd(new Date(now.getFullYear(), now.getMonth() - 2, 1)); to = ymd(endOfMonth(now)); }
+    else if (per === '6') { from = ymd(new Date(now.getFullYear(), now.getMonth() - 5, 1)); to = ymd(endOfMonth(now)); }
+    const list = inRange(state.entries, from, to);
+    const costMap = {}, salesMap = {};
+    list.forEach(e => {
+      if (e.kind === 'expense') costMap[e.category] = (costMap[e.category] || 0) + e.amount;
+      else salesMap[e.category] = (salesMap[e.category] || 0) + e.amount;
+    });
+    pie('costPie', 'costLegend', costMap);
+    pie('salesPie', 'salesLegend', salesMap);
+
+    const data = [];
+    for (let i = 5; i >= 0; i--) {
+      const s = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const T = totals(inRange(state.entries, ymd(s), ymd(endOfMonth(s))));
+      data.push({ label: s.toLocaleString('en-PH', { month: 'short' }), profit: T.profit });
+    }
+    const max = Math.max(1, ...data.map(d => Math.abs(d.profit)));
+    const mid = 96, scale = 60 / max;
+    let svg = `<line x1="10" y1="${mid}" x2="310" y2="${mid}" style="stroke:var(--line)"/>`;
+    data.forEach((d, i) => {
+      const x = 22 + i * 48, h = Math.abs(d.profit) * scale;
+      const y = d.profit >= 0 ? mid - h : mid;
+      svg += `<rect x="${x}" y="${y.toFixed(1)}" width="30" height="${Math.max(h, 1).toFixed(1)}" rx="4" style="fill:${d.profit >= 0 ? 'var(--profit)' : 'var(--cost)'}"/>`;
+      const ly = d.profit >= 0 ? y - 6 : y + h + 14;
+      svg += `<text x="${x + 15}" y="${ly.toFixed(1)}" text-anchor="middle" style="fill:var(--muted);font-size:10px">${compact(d.profit)}</text>`;
+      svg += `<text x="${x + 15}" y="190" text-anchor="middle" style="fill:var(--muted);font-size:11px">${d.label}</text>`;
+    });
+    $('profitBars').innerHTML = svg;
+  }
+
+  /* ---------- TAX FIGURES ---------- */
+  function renderForms(){
+    const year = +$('fYear').value;
+    const q = $('fQ').value;
+    const regime = $('fRegime').value;
+    $('fDed').disabled = regime === 'eight';
+    const isYear = q === 'fy';
+    let from, to;
+    if (isYear) { from = `${year}-01-01`; to = `${year}-12-31`; }
+    else {
+      const sm = (+q.slice(1) - 1) * 3;
+      from = ymd(new Date(year, sm, 1));
+      to = ymd(new Date(year, sm + 3, 0));
+    }
+    const list = inRange(state.entries, from, to);
+    const T = totals(list);
+    const returns = Math.max(0, parseFloat($('fReturns').value) || 0);
+    const net = T.sales - returns;
+    const grossIncome = net - T.cogs;
+    const netIncome = grossIncome - T.opex;
+    const osd = !$('fDed').disabled && $('fDed').value === 'osd';
+    const taxable = Math.max(0, osd ? grossIncome - 0.4 * net : netIncome);
+
+    const byCat = cats => cats
+      .map(c => [c, list.filter(e => e.kind === 'expense' && e.category === c).reduce((s, e) => s + e.amount, 0)])
+      .filter(([, v]) => v > 0);
+
+    const rows = [];
+    const H = t => rows.push(`<tr class="hd"><td colspan="3">${t}</td></tr>`);
+    const R = (label, v, cls = '') => rows.push(`<tr class="${cls}"><td>${label}</td><td class="num">${money(v)}</td><td class="num"><button class="btn small" type="button" data-copy="${(+v || 0).toFixed(2)}">Copy</button></td></tr>`);
+
+    H('Sales');
+    R('Gross sales / receipts', T.sales);
+    if (returns > 0) R('Less: returns and discounts', returns, 'sub');
+    R('Net sales', net, 'total');
+
+    H('Cost of sales');
+    byCat(COGS).forEach(([c, v]) => R(c, v, 'sub'));
+    R('Total cost of sales', T.cogs, 'total');
+    R('Gross income', grossIncome, 'total');
+
+    H('Operating expenses');
+    byCat(OPEX).forEach(([c, v]) => R(c, v, 'sub'));
+    R('Total operating expenses', T.opex, 'total');
+    R('Net income before income tax', netIncome, 'total');
+
+    H('Income tax basis');
+    if (regime === 'eight') {
+      R('Tax base: gross sales', T.sales, 'total');
+    } else {
+      if (osd) R('Optional standard deduction (40% of net sales)', 0.4 * net, 'sub');
+      R('Taxable income', taxable, 'total');
+    }
+
+    H('Taxes to file');
+    if (regime === 'grad') {
+      R('Percentage tax, 3% (BIR 2551Q)', 0.03 * T.sales);
+    }
+    if (regime === 'vat') {
+      const out = T.sales * 12 / 112;
+      const inp = (T.cogs + T.opex) * 12 / 112;
+      R('Output VAT, 12% (BIR 2550Q)', out);
+      R('Input VAT, estimate', inp, 'sub');
+      R('VAT payable / (excess)', out - inp, 'total');
+    }
+    if (regime === 'eight') {
+      const t8 = isYear ? 0.08 * Math.max(0, T.sales - 250000) : 0.08 * T.sales;
+      R('8% income tax' + (isYear ? ' (after ₱250,000 deduction)' : ''), t8, 'total');
+    } else if (isYear) {
+      R('Income tax, graduated rates (BIR 1701 / 1701A)', graduated(taxable), 'total');
+    } else {
+      rows.push('<tr><td colspan="3" class="hint">Income tax is figured on the full year. Choose Full year to see it.</td></tr>');
+    }
+
+    $('formLines').innerHTML = rows.join('');
+    $('formWarn').innerHTML = (regime === 'eight' && isYear && T.sales > 3000000)
+      ? '<p class="warn">Gross sales are above ₱3,000,000, so the 8% option does not apply to this year.</p>'
+      : '';
+  }
+
+  /* ---------- RENDER ---------- */
+  function renderAll(){
+    renderBiz();
+    renderQuick();
+    renderPlanner();
+    renderCards();
+    renderPeriod();
+    renderList();
+    renderPricing();
+    renderCharts();
+    renderForms();
+  }
+
+  function showTab(t){
+    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+    ['log', 'price', 'charts', 'forms'].forEach(n => { $('tab-' + n).hidden = n !== t; });
+    renderAll();
+  }
+
+  /* ---------- INIT ---------- */
+  const now = new Date();
+  $('todayLabel').textContent = now.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  $('fDate').value = ymd(now);
+  const yearSel = $('fYear');
+  for (let y = now.getFullYear(); y >= now.getFullYear() - 5; y--) {
+    yearSel.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
+  }
+  buildCats();
+  $('qCat').innerHTML = `<optgroup label="Cost of sales">${COGS.map(c => `<option>${esc(c)}</option>`).join('')}</optgroup>
+    <optgroup label="Operating expenses">${OPEX.map(c => `<option>${esc(c)}</option>`).join('')}</optgroup>`;
+  syncKind();
+  syncView();
+
+  document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  document.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', () => {
+    ui.kind = b.dataset.kind; syncKind(); buildCats();
+  }));
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
+    ui.view = b.dataset.view; syncView(); renderPeriod();
+  }));
+
+  async function submitWith(form, entry, done){
+    const btn = form.querySelector('button[type=submit]');
+    btn.disabled = true;
+    try { await addEntries([entry]); setSync(true, 'Synced'); done(); }
+    catch (e) { saveFailed(e); }
+    finally { btn.disabled = false; renderAll(); }
+  }
+
+  $('entryForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const amount = parseFloat($('fAmount').value);
+    if (!(amount > 0)) { toast('Enter an amount above zero'); return; }
+    submitWith($('entryForm'), {
+      id: newId(),
+      date: $('fDate').value || ymd(new Date()),
+      kind: ui.kind,
+      category: $('fCat').value,
+      note: $('fNote').value.trim(),
+      amount: Math.round(amount * 100) / 100
+    }, () => {
+      $('fAmount').value = '';
+      $('fNote').value = '';
+      toast('Saved');
+    });
+  });
+
+  $('quickForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const amount = parseFloat($('qAmount').value);
+    if (!(amount > 0)) { toast('Enter an amount above zero'); return; }
+    submitWith($('quickForm'), {
+      id: newId(),
+      date: ymd(new Date()),
+      kind: 'expense',
+      category: $('qCat').value,
+      note: $('qNote').value.trim(),
+      amount: Math.round(amount * 100) / 100
+    }, () => {
+      $('qAmount').value = '';
+      $('qNote').value = '';
+      toast('Expense added to today');
+    });
+  });
+
+  $('fFilter').addEventListener('change', renderList);
+
+  $('entryList').addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-del]');
+    if (!b) return;
+    const id = b.dataset.del;
+    if (ui.armed === id) {
+      ui.armed = null;
+      b.disabled = true;
+      try { await deleteEntry(id); setSync(true, 'Synced'); toast('Entry deleted'); }
+      catch (e) { saveFailed(e); }
+    } else {
+      ui.armed = id;
+    }
+    renderAll();
+  });
+
+
+  $('csvBtn').addEventListener('click', () => {
+    const head = 'date,type,category,note,amount';
+    const lines = [...state.entries]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(e => [e.date, e.kind, e.category, `"${String(e.note).replace(/"/g, '""')}"`, e.amount.toFixed(2)].join(','));
+    copyText([head, ...lines].join('\n'));
+  });
+
+  $('plChips').innerHTML = '<span class="hint" style="margin:0;align-self:center">Quick add:</span>'
+    + PLAN_CHIPS.map(c => `<button type="button" data-chip="${esc(c)}">+ ${esc(c)}</button>`).join('');
+  function addBox(label){
+    const d = { id: newId(), label: label || '', amount: '' };
+    drafts.push(d);
+    if (document.activeElement) document.activeElement.blur();
+    renderPlanner();
+    const el = $('planBoxes').querySelector(`[data-id="${d.id}"] ${label ? '.pb-amt' : '.pb-label'}`);
+    if (el) el.focus();
+  }
+  $('plChips').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-chip]');
+    if (b) addBox(b.dataset.chip);
+  });
+  $('planBoxes').addEventListener('click', async ev => {
+    if (ev.target.closest('#plAdd')) { addBox(''); return; }
+    const b = ev.target.closest('[data-pdel]');
+    if (!b) return;
+    const id = b.dataset.pdel;
+    const di = drafts.findIndex(x => x.id === id);
+    if (di >= 0) { drafts.splice(di, 1); renderPlanner(); return; }
+    if (ui.armed !== id) { ui.armed = id; renderPlanner(); return; }
+    ui.armed = null;
+    b.disabled = true;
+    try {
+      const { error } = await db.from('plan_items').delete().eq('id', id);
+      if (error) throw error;
+      state.plan = state.plan.filter(x => x.id !== id);
+      setSync(true, 'Synced');
+    } catch (e) { saveFailed(e); }
+    renderPlanner();
+  });
+  const boxItem = el => {
+    const id = el.closest('.pbox').dataset.id;
+    return state.plan.find(x => x.id === id) || drafts.find(x => x.id === id);
+  };
+  // Live totals while typing.
+  $('planBoxes').addEventListener('input', ev => {
+    const item = ev.target.closest('.pbox') && boxItem(ev.target);
+    if (!item) return;
+    if (ev.target.classList.contains('pb-amt')) item.amount = ev.target.value === '' ? '' : Math.max(0, parseFloat(ev.target.value) || 0);
+    else item.label = ev.target.value;
+    renderPlanSums();
+  });
+  // Save when a box is finished (field left or Enter pressed).
+  $('planBoxes').addEventListener('change', async ev => {
+    const item = ev.target.closest('.pbox') && boxItem(ev.target);
+    if (!item) return;
+    const label = String(item.label).trim();
+    const amount = Math.round((+item.amount || 0) * 100) / 100;
+    if (!label || item.amount === '') return;
+    const isDraft = drafts.includes(item);
+    try {
+      const { error } = isDraft
+        ? await db.from('plan_items').insert({ id: item.id, label, amount })
+        : await db.from('plan_items').update({ label, amount }).eq('id', item.id);
+      if (error) throw error;
+      item.label = label;
+      item.amount = amount;
+      if (isDraft) { drafts.splice(drafts.indexOf(item), 1); state.plan.push(item); ev.target.closest('.pbox').classList.remove('draft'); }
+      setSync(true, 'Synced');
+    } catch (e) { saveFailed(e); }
+    renderPlanSums();
+  });
+  $('planBoxes').addEventListener('keydown', ev => {
+    if (ev.key === 'Enter' && ev.target.tagName === 'INPUT') { ev.preventDefault(); ev.target.blur(); }
+  });
+  $('planBoxes').addEventListener('focusout', () => {
+    // Redraw once focus leaves the boxes, so changes from the other phone show up.
+    setTimeout(() => { if (!$('planBoxes').contains(document.activeElement)) renderPlanner(); }, 0);
+  });
+  let settingsTimer = null;
+  function saveSettings(){
+    clearTimeout(settingsTimer);
+    settingsTimer = setTimeout(async () => {
+      try {
+        const { error } = await db.from('plan_settings').update({ days_open: state.days, units_per_day: state.units, updated_at: new Date().toISOString() }).eq('id', 1);
+        if (error) throw error;
+        setSync(true, 'Synced');
+      } catch (e) { saveFailed(e); }
+    }, 600);
+  }
+  $('plDays').addEventListener('input', () => {
+    const d = Math.round(+$('plDays').value);
+    if (d >= 1 && d <= 31) { state.days = d; saveSettings(); renderPlanSums(); }
+  });
+  $('plUnits').addEventListener('input', () => {
+    const u = parseFloat($('plUnits').value);
+    state.units = u > 0 ? Math.round(u * 100) / 100 : null;
+    saveSettings();
+    renderPlanSums();
+  });
+  $('plUse').addEventListener('click', () => {
+    const P = planFigures();
+    if (!isFinite(P.perUnit)) return;
+    $('pCost').value = (Math.round(P.perUnit * 100) / 100).toFixed(2);
+    renderPricing();
+    $('pCost').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    toast('Cost per unit copied to the price check');
+  });
+
+  // Business name, shared by everyone.
+  async function renameBusiness(){
+    const name = (prompt('Business name', state.bizName) || '').trim().slice(0, 60);
+    if (!name || name === state.bizName) return;
+    state.bizName = name;
+    renderBiz();
+    try {
+      const { error } = await db.from('business_settings').update({ name, updated_at: new Date().toISOString() }).eq('id', 1);
+      if (error) throw error;
+      setSync(true, 'Synced');
+    } catch (e) { saveFailed(e); }
+  }
+  $('bizEdit').addEventListener('click', renameBusiness);
+
+  function parseCsvLine(line){
+    const out = [];
+    let cur = '', q = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (q) {
+        if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+        else if (ch === '"') q = false;
+        else cur += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
+  $('importBtn').addEventListener('click', async () => {
+    const text = $('importText').value.trim();
+    if (!text) { toast('Paste the CSV first'); return; }
+    // Skip rows already here (same date, type, category, note and amount), so pasting twice is harmless.
+    const sig = e => [e.date, e.kind, e.category, e.note, (+e.amount).toFixed(2)].join('|');
+    const have = new Set(state.entries.map(sig));
+    const rows = [];
+    let bad = 0;
+    for (const line of text.split(/\r?\n/)) {
+      if (!line.trim() || /^date,type,/i.test(line)) continue;
+      const [date, kind, category, note, amt] = parseCsvLine(line);
+      const amount = Math.round(parseFloat(amt) * 100) / 100;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '') || !['sale', 'expense'].includes(kind) || !category || !(amount > 0)) { bad++; continue; }
+      const e = { id: newId() + rows.length, date, kind, category, note: (note || '').trim(), amount };
+      if (have.has(sig(e))) continue;
+      have.add(sig(e));
+      rows.push(e);
+    }
+    if (!rows.length) { toast(bad ? 'Could not read those lines' : 'Nothing new to import'); return; }
+    $('importBtn').disabled = true;
+    try {
+      for (let i = 0; i < rows.length; i += 500) await addEntries(rows.slice(i, i + 500));
+      $('importText').value = '';
+      setSync(true, 'Synced');
+      toast(`Imported ${rows.length} entries` + (bad ? `, skipped ${bad}` : ''));
+    } catch (e) { saveFailed(e); }
+    finally { $('importBtn').disabled = false; renderAll(); }
+  });
+
+  ['pCost', 'pVal', 'pMode'].forEach(id => $(id).addEventListener('input', renderPricing));
+  $('cPeriod').addEventListener('change', renderCharts);
+  ['fYear', 'fQ', 'fRegime', 'fDed', 'fReturns'].forEach(id => $(id).addEventListener('input', renderForms));
+  $('formLines').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-copy]');
+    if (b) copyText(b.dataset.copy);
+  });
+
+  function showView(v){
+    $('loadingView').hidden = v !== 'loading';
+    $('authView').hidden = v !== 'auth';
+    $('appView').hidden = v !== 'app';
+    $('statusBar').hidden = v !== 'app';
+    $('bizEdit').hidden = v !== 'app';
+  }
+
+  async function start(session){
+    $('whoText').textContent = session.user.email;
+    showView('loading');
+    try { await load(); }
+    catch (e) {
+      showView('app');
+      setSync(false, 'Offline');
+      showTab('log');
+      return;
+    }
+    showView('app');
+    showTab('log');
+    if (!ui.started) {
+      ui.started = true;
+      const ch = db.channel('ledger');
+      ['entries', 'plan_items', 'plan_settings', 'business_settings'].forEach(table => ch.on('postgres_changes', { event: '*', schema: 'public', table }, refreshSoon));
+      ch.subscribe();
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSoon(); });
+    }
+  }
+
+  $('loginForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    $('lErr').textContent = '';
+    $('lBtn').disabled = true;
+    const { data, error } = await db.auth.signInWithPassword({ email: $('lEmail').value.trim(), password: $('lPass').value });
+    $('lBtn').disabled = false;
+    if (error) { $('lErr').textContent = /invalid/i.test(error.message) ? 'That email and password don\'t match. Try again.' : 'Could not sign in. Check your internet and try again.'; return; }
+    $('lPass').value = '';
+    start(data.session);
+  });
+  $('signOutBtn').addEventListener('click', async () => {
+    await db.auth.signOut();
+    state.entries = [];
+    showView('auth');
+  });
+
+  db.auth.getSession().then(({ data }) => {
+    if (data.session) start(data.session);
+    else showView('auth');
+  });
+})();
+</script>
+</body>
+</html>
