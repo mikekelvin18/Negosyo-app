@@ -424,7 +424,10 @@ button[disabled]{opacity:.6;cursor:default}
   }
   function saveFailed(e){
     setSync(false, 'Not saved');
-    toast(/fetch|network/i.test(String(e && e.message)) ? 'No internet. Not saved, try again.' : 'Could not save. Try again.');
+    const msg = String(e && e.message);
+    toast(/fetch|network/i.test(msg) ? 'No internet. Not saved, try again.'
+      : (e && e.code === '42501') || /row-level security/i.test(msg) ? 'This login is not allowed to save yet. Ask the owner to add your email.'
+      : 'Could not save. Try again.');
   }
 
   function toast(msg){
@@ -822,8 +825,19 @@ button[disabled]{opacity:.6;cursor:default}
 
   /* ---------- INIT ---------- */
   const now = new Date();
-  $('todayLabel').textContent = now.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  $('fDate').value = ymd(now);
+  // The app often stays open on a phone overnight, so move "today" forward when the day changes,
+  // unless someone picked another date on purpose.
+  function syncToday(){
+    const d = new Date(), t = ymd(d);
+    if (ui.today === t) return false;
+    $('todayLabel').textContent = d.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    if (!$('fDate').value || $('fDate').value === ui.today) $('fDate').value = t;
+    ui.today = t;
+    return true;
+  }
+  syncToday();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && syncToday()) renderAll(); });
+  setInterval(() => { if (syncToday()) renderAll(); }, 60000);
   const yearSel = $('fYear');
   for (let y = now.getFullYear(); y >= now.getFullYear() - 5; y--) {
     yearSel.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
@@ -852,6 +866,7 @@ button[disabled]{opacity:.6;cursor:default}
 
   $('entryForm').addEventListener('submit', ev => {
     ev.preventDefault();
+    syncToday();
     const amount = parseFloat($('fAmount').value);
     if (!(amount > 0)) { toast('Enter an amount above zero'); return; }
     submitWith($('entryForm'), {
@@ -1091,7 +1106,18 @@ button[disabled]{opacity:.6;cursor:default}
   async function start(session){
     $('whoText').textContent = session.user.email;
     showView('loading');
-    try { await load(); }
+    try {
+      await load();
+      // Signed in but not on the members list: the server hides all records and refuses saves.
+      const { data: me, error } = await db.from('ledger_members').select('email').limit(1);
+      if (!error && !me.length) {
+        await db.auth.signOut();
+        state.entries = [];
+        showView('auth');
+        $('lErr').textContent = session.user.email + ' is not on this ledger yet. Ask the owner to add this email, then sign in again.';
+        return;
+      }
+    }
     catch (e) {
       showView('app');
       setSync(false, 'Offline');
