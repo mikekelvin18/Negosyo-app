@@ -149,6 +149,27 @@ button[disabled]{opacity:.6;cursor:default}
 
   <!-- LOG -->
   <section id="tab-log" class="grid">
+    <form id="revForm" class="card span2" autocomplete="off">
+      <h2>Daily revenue</h2>
+      <div class="pair">
+        <label>Date<input type="date" id="rDate"></label>
+        <label>How many (loads, orders…)<input type="number" id="rQty" min="0" step="1" inputmode="numeric" placeholder="e.g. 5" required></label>
+      </div>
+      <div class="pair">
+        <label>Price per unit (₱)<input type="number" id="rPrice" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 170" required></label>
+        <label>Category<select id="rCat"></select></label>
+      </div>
+      <div class="pair">
+        <label>Extras (₱), optional<input type="number" id="rExtra" min="0" step="0.01" inputmode="decimal" placeholder="0"></label>
+        <label>Extras description, optional<input id="rExtraNote" maxlength="40" placeholder="e.g. Steam press"></label>
+      </div>
+      <div class="quick-total" style="margin:0 0 10px"><span id="rCalc">Enter how many and the price</span><b id="rTotal">₱0.00</b></div>
+      <button class="btn primary" type="submit">Save revenue</button>
+      <div id="revList"></div>
+      <div class="quick-total"><span id="rDayLbl">Revenue for this day</span><b id="rDay">₱0.00</b></div>
+      <div class="quick-total"><span id="rMonthLbl">Revenue this month</span><b id="rMonth">₱0.00</b></div>
+    </form>
+
     <form id="entryForm" class="card" autocomplete="off">
       <h2>Add entry</h2>
       <div class="seg" role="group" aria-label="Entry type">
@@ -571,6 +592,51 @@ button[disabled]{opacity:.6;cursor:default}
     $('qMonth').textContent = money(month.costs);
   }
 
+  /* ---------- DAILY REVENUE ---------- */
+  // Last price and category used, remembered on this phone so they are filled in next time.
+  const REV_KEY = 'negosyo-revenue-defaults';
+  function revDefaults(){
+    try { return JSON.parse(localStorage.getItem(REV_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveRevDefaults(d){
+    try { localStorage.setItem(REV_KEY, JSON.stringify(d)); } catch (e) {}
+  }
+  function revFigures(){
+    const qty = parseFloat($('rQty').value), price = parseFloat($('rPrice').value);
+    const extra = parseFloat($('rExtra').value) || 0;
+    const base = qty > 0 && price > 0 ? Math.round(qty * price * 100) / 100 : 0;
+    return { qty, price, extra, total: Math.round((base + extra) * 100) / 100 };
+  }
+  function revDescribe(qty, price, extra, extraNote){
+    let s = `${qty} × ${money(price)}`;
+    if (extra > 0) s += ` + ${money(extra)} extra` + (extraNote ? ` (${extraNote})` : '');
+    return s;
+  }
+  function renderRevCalc(){
+    const f = revFigures();
+    $('rCalc').textContent = f.qty > 0 && f.price > 0
+      ? revDescribe(f.qty, f.price, f.extra, $('rExtraNote').value.trim())
+      : 'Enter how many and the price';
+    $('rTotal').textContent = money(f.total);
+  }
+  function renderRevenue(){
+    const day = $('rDate').value || ymd(new Date());
+    const d = new Date(day + 'T00:00:00');
+    const sales = state.entries.filter(e => e.kind === 'sale' && e.date === day);
+    $('revList').innerHTML = sales.length
+      ? sales.map(e => `<div class="entry">
+          <div><div>${esc(e.note || e.category)}</div><div class="meta">${e.date} · ${esc(e.category)}</div></div>
+          <div class="amt pos">+${money(e.amount)}</div>
+          <div class="acts"><button class="btn small danger" type="button" data-del="${esc(e.id)}">${ui.armed === e.id ? 'Tap again to delete' : 'Delete'}</button></div>
+        </div>`).join('')
+      : '<p class="hint">No revenue saved for this day yet.</p>';
+    const isToday = day === ymd(new Date());
+    $('rDayLbl').textContent = isToday ? "Today's revenue" : `Revenue for ${d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}`;
+    $('rDay').textContent = money(sales.reduce((s, e) => s + e.amount, 0));
+    $('rMonthLbl').textContent = `Revenue for ${d.toLocaleString('en-PH', { month: 'long' })}`;
+    $('rMonth').textContent = money(totals(inRange(state.entries, ymd(startOfMonth(d)), ymd(endOfMonth(d)))).sales);
+  }
+
   /* ---------- PRICE CHECK ---------- */
   function renderPricing(){
     const mode = $('pMode').value;
@@ -804,6 +870,7 @@ button[disabled]{opacity:.6;cursor:default}
   /* ---------- RENDER ---------- */
   function renderAll(){
     renderBiz();
+    renderRevenue();
     renderQuick();
     renderPlanner();
     renderCards();
@@ -886,11 +953,51 @@ button[disabled]{opacity:.6;cursor:default}
     });
   });
 
+  {
+    const d = revDefaults();
+    $('rCat').innerHTML = SALE_CATS.map(c => `<option>${esc(c)}</option>`).join('');
+    if (SALE_CATS.includes(d.category)) $('rCat').value = d.category;
+    if (d.price > 0) $('rPrice').value = d.price;
+    $('rDate').value = ymd(new Date());
+    renderRevCalc();
+  }
+  ['rQty', 'rPrice', 'rExtra', 'rExtraNote'].forEach(id => $(id).addEventListener('input', renderRevCalc));
+  $('rDate').addEventListener('change', renderRevenue);
+
+  $('revForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const f = revFigures(), extraNote = $('rExtraNote').value.trim();
+    if (!(f.qty > 0)) { toast('Enter how many'); return; }
+    if (!(f.price > 0)) { toast('Enter the price per unit'); return; }
+    if (f.extra < 0) { toast('Extras cannot be below zero'); return; }
+    saveRevDefaults({ price: f.price, category: $('rCat').value });
+    submitWith($('revForm'), {
+      id: newId(),
+      date: $('rDate').value || ymd(new Date()),
+      kind: 'sale',
+      category: $('rCat').value,
+      note: revDescribe(f.qty, f.price, f.extra, extraNote),
+      amount: f.total
+    }, () => {
+      $('rQty').value = '';
+      $('rExtra').value = '';
+      $('rExtraNote').value = '';
+      renderRevCalc();
+      toast('Revenue saved');
+    });
+  });
+
   $('fFilter').addEventListener('change', renderList);
 
-  $('entryList').addEventListener('click', async ev => {
+  $('revList').addEventListener('click', ev => {
     const b = ev.target.closest('[data-del]');
-    if (!b) return;
+    if (b) onDeleteTap(b);
+  });
+  $('entryList').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-del]');
+    if (b) onDeleteTap(b);
+  });
+  async function onDeleteTap(b){
     const id = b.dataset.del;
     if (ui.armed === id) {
       ui.armed = null;
@@ -901,8 +1008,7 @@ button[disabled]{opacity:.6;cursor:default}
       ui.armed = id;
     }
     renderAll();
-  });
-
+  }
 
   $('csvBtn').addEventListener('click', () => {
     const head = 'date,type,category,note,amount';
